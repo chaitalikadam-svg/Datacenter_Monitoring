@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .signup-box {
+            background: #1e293b;
+            padding: 20px;
+            width: 320px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 16px;
+            color: #38bdf8;
+        }
+
+        label {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .success {
+            color: #22c55e;
+        }
+
+        a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="signup-box">
+
+    <h2>Create Account</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <label>Email</label>
+        <input type="email" name="email" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <p class="message">
+        Already have an account?
+        <a href="{% url 'login_view' %}">Login</a>
+    </p>
+
+    {% if error %}
+        <p class="message error">{{ error }}</p>
+    {% endif %}
+
+    {% if message %}
+        <p class="message success">{{ message }}</p>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

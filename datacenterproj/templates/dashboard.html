@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fog-Edge Datacenter Monitoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 16px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #38bdf8;
+            border-bottom: 1px solid #334155;
+        }
+
+        header button {
+            font-size: 10px;
+            margin-left: 20px;
+            cursor: pointer;
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #94a3b8;
+        }
+
+        .rack-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .rack-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 15px;
+            color: #3b82f6;
+        }
+
+        .rack-value {
+            font-weight: bold;
+            color: #f8fafc;
+        }
+
+        .timestamp {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .green { color: #22c55e; }
+        .yellow { color: #facc15; }
+        .red { color: #ef4444; }
+
+        .charts {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-auto-rows: 260px;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .chart-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            position: relative;
+        }
+
+        .chart-box canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    &#9672; Fog-Edge Datacenter Monitoring Dashboard
+    <button onclick="window.location.href='?'">Show All Racks</button>
+</header>
+
+<div class="main-container">
+
+    <div class="sidebar">
+        <h2>Rack Status</h2>
+        <div id="rack-container"></div>
+    </div>
+
+    <div class="charts">
+        <div class="chart-box"><canvas id="cpuChart"></canvas></div>
+        <div class="chart-box"><canvas id="humidityChart"></canvas></div>
+        <div class="chart-box"><canvas id="powerChart"></canvas></div>
+        <div class="chart-box"><canvas id="networkChart"></canvas></div>
+        <div class="chart-box full-width"><canvas id="tempChart"></canvas></div>
+    </div>
+
+</div>
+
+<script>
+Chart.defaults.font.size = 11;
+Chart.defaults.color = "#cbd5e1";
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.animation = false;
+
+const COLORS = ["#22c55e", "#3b82f6", "#f97316", "#e11d48", "#a855f7"];
+const MAX_POINTS = 40;
+
+const urlParams = new URLSearchParams(window.location.search);
+const selectedRack = urlParams.get('rack');
+
+const chartOptions = (title, yLabel) => ({
+    responsive: true,
+    plugins: {
+        title: {
+            display: true,
+            text: title,
+            color: "#e2e8f0",
+            font: { size: 14, weight: "bold" }
+        },
+        legend: {
+            labels: { color: "#94a3b8", boxWidth: 12 }
+        }
+    },
+    scales: {
+        x: {
+            type: "time",
+            time: { unit: "second" },
+            ticks: { color: "#64748b" },
+            grid: { color: "rgba(255,255,255,0.05)" }
+        },
+        y: {
+            title: { display: true, text: yLabel },
+            ticks: { color: "#64748b" },
+            grid: { color: "rgba(255,255,255,0.05)" }
+        }
+    }
+});
+
+const makeChart = (id, title, yLabel) =>
+    new Chart(document.getElementById(id), {
+        type: "line",
+        data: { labels: [], datasets: [] },
+        options: chartOptions(title, yLabel)
+    });
+
+const cpuChart = makeChart("cpuChart", "CPU Utilization (%)", "%");
+const humidityChart = makeChart("humidityChart", "Humidity (%)", "%");
+const powerChart = makeChart("powerChart", "Power Usage (W)", "W");
+const networkChart = makeChart("networkChart", "Network I/O (Mbps)", "Mbps");
+const tempChart = makeChart("tempChart", "Average Temperature (°C)", "°C");
+
+function updateCharts(racks) {
+    const build = field => {
+        const rackNames = selectedRack ? [selectedRack] : Object.keys(racks);
+
+        return rackNames.map((rack, i) => ({
+            label: rack,
+            data: racks[rack].slice(-MAX_POINTS).map(x => ({
+                x: x.timestamp,
+                y: x[field]
+            })),
+            borderColor: COLORS[i % COLORS.length],
+            backgroundColor: COLORS[i % COLORS.length] + "33",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.3
+        }));
+    };
+
+    [
+        [cpuChart, "avg_cpu_utilization"],
+        [humidityChart, "avg_humidity"],
+        [powerChart, "avg_power_usage"],
+        [networkChart, "avg_network_io"],
+        [tempChart, "avg_temperature"],
+    ].forEach(([chart, field]) => {
+        chart.data.datasets = build(field);
+        chart.update("none");
+    });
+}
+
+function updateRacks(racks) {
+    const container = document.getElementById("rack-container");
+    container.innerHTML = "";
+
+    for (const rack in racks) {
+        const d = racks[rack].slice(-1)[0];
+        const lastSeen = new Date(d.timestamp).toLocaleString("en-GB");
+
+        const highlight = selectedRack === rack ? "border: 2px solid #38bdf8;" : "";
+
+        container.innerHTML += `
+            <div class="rack-card" 
+                 style="cursor:pointer; ${highlight}"
+                 onclick="window.location.href='?rack=${rack}'">
+
+                <h3>${rack}</h3>
+
+                CPU: <span class="rack-value">${d.avg_cpu_utilization}%</span><br>
+                Power: <span class="rack-value">${d.avg_power_usage}W</span><br>
+                Network I/O: <span class="rack-value">${d.avg_network_io} Mbps</span><br>
+                Temperature: <span class="rack-value">${d.avg_temperature}°C</span><br>
+
+                <div class="timestamp">Updated: ${lastSeen}</div>
+            </div>
+        `;
+    }
+}
+
+async function loadData() {
+    try {
+        const res = await fetch("/api/rack-data/");
+        const { racks } = await res.json();
+        if (racks) {
+            updateRacks(racks);
+            updateCharts(racks);
+        }
+    } catch (err) {
+        console.error("Dashboard Error:", err);
+    }
+}
+
+setInterval(loadData, 5000);
+loadData();
+</script>
+
+</body>
+</html>
