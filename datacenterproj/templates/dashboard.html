@@ -199,7 +199,7 @@ function updateCharts(racks) {
         return rackNames.map((rack, i) => ({
             label: rack,
             data: racks[rack].slice(-MAX_POINTS).map(x => ({
-                x: new Date(x.timestamp)
+                x: new Date(x.timestamp),
                 y: x[field]
             })),
             borderColor: COLORS[i % COLORS.length],
