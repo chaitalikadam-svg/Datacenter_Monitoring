@@ -2,9 +2,10 @@ from datetime import datetime
 
 BUFFER = {}
 WINDOW_SIZE = 10
+# Number of readings to accumulate before computing aggregated metrics
 
 
-def process_sensor_data(data):
+def process_sensor_data(data): #computes the average metrics 
 
     rack_id = data["rack_id"]
 

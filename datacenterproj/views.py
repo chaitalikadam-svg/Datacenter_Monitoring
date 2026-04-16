@@ -24,7 +24,7 @@ def signup_view(request):
         email = request.POST.get("email")
         password = request.POST.get("password")
 
-        # STEP 1: Check if user exists in Cognito
+        # Check if user exists in Cognito user group
         try:
             cognito.admin_get_user(
                 UserPoolId=settings.COGNITO_USER_POOL_ID,
@@ -41,7 +41,7 @@ def signup_view(request):
         except Exception as e:
             return render(request, "signup.html", {"error": str(e)})
 
-        #  STEP 2: Create user
+        # Creation of user
         try:
             cognito.sign_up(
                 ClientId=settings.COGNITO_CLIENT_ID,
@@ -58,7 +58,7 @@ def signup_view(request):
                 "error": e.response["Error"]["Message"]
             })
 
-        #  STEP 3: Check if already subscribed
+        # Check if already subscribed to SNS topic
         try:
             subs = sns.list_subscriptions_by_topic(TopicArn=TOPIC_ARN)
 
@@ -69,7 +69,7 @@ def signup_view(request):
                     already_subscribed = True
                     break
 
-            #  STEP 4: Subscribe if NOT already subscribed
+            # Subscribe if NOT already subscribed to the SNS
             if not already_subscribed:
                 sns.subscribe(
                     TopicArn=TOPIC_ARN,
@@ -100,8 +100,8 @@ def login_view(request):
         
 
         result = authenticate_user(email, password)
-
-        if result == "NOT_APPROVED":
+        
+        if result == "NOT_APPROVED": 
             return render(request, "login.html", {
                 "error": "Admin has not approved your account yet"
             })
@@ -132,7 +132,7 @@ def receive_sensor_data(request):
         if processed:
             print("Fog processed:", processed)
 
-            # send to AWS IoT Core
+            # send data to AWS IoT Core
             publish_to_iot(processed)
 
         return JsonResponse({"status": "received"})
@@ -161,4 +161,5 @@ def rack_data_api(request):
         return JsonResponse({"error": "Internal server error"}, status=500)
     
 def dashboard(request):
+    # Display dashboard
     return render(request, "dashboard.html")
