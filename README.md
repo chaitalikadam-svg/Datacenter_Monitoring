@@ -16,9 +16,6 @@ A hierarchical **edge → fog → cloud** monitoring platform for datacenter env
 - [Getting Started](#getting-started)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Security](#security)
-- [Screenshots](#screenshots)
-- [Limitations and Future Work](#limitations-and-future-work)
-- [References](#references)
 
 ---
 
