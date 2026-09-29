@@ -41,7 +41,7 @@ Purely cloud-based monitoring struggles with high latency, wasted bandwidth, sin
 
 ## Architecture
 
-![Architecture Diagram](architecture.png)
+![Architecture Diagram](fogandedgearch.png)
 
 
 ## Tech Stack
